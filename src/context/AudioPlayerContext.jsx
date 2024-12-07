@@ -1,12 +1,4 @@
-import {
-  createContext,
-  useContext,
-  // useState,
-  // ReactNode,
-  // Dispatch,
-  // SetStateAction,
-  // useRef,
-} from 'react';
+import { createContext, useContext } from 'react';
 
 // Context
 export const AudioPlayerContext = createContext();
