@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   BsFillFastForwardFill,
   BsFillPauseFill,
@@ -12,23 +12,81 @@ import {
 import { useAudioPlayerContext } from '../context/AudioPlayerContext';
 
 const Controls = () => {
-  const { currentTrack, audioRef } = useAudioPlayerContext();
+  const {
+    currentTrack,
+    audioRef,
+    progressBarRef,
+    duration,
+    setDuration,
+    setTimeProgress,
+  } = useAudioPlayerContext();
   const [isShuffle, setIsShuffle] = useState(false);
   const [isRepeat, setIsRepeat] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const playAnimationRef = useRef(null);
 
-  // Playing or pausing track
+  // Update progress of the audio playback and progress bar
+  const updateProgress = useCallback(() => {
+    if (audioRef.current && progressBarRef.current && duration) {
+      const currentTime = audioRef.current.currentTime;
+      setTimeProgress(currentTime);
+      progressBarRef.current.value = currentTime.toString();
+      progressBarRef.current.style.setProperty(
+        '--range-progress',
+        `${(currentTime / duration) * 100}%`
+      );
+    }
+  }, [duration, setTimeProgress, audioRef, progressBarRef]);
+
+  // Start the animation when audio begins playing
+  const startAnimation = useCallback(() => {
+    if (audioRef.current && progressBarRef.current && duration) {
+      const animate = () => {
+        updateProgress();
+        playAnimationRef.current = requestAnimationFrame(animate);
+      };
+      playAnimationRef.current = requestAnimationFrame(animate);
+    }
+  }, [updateProgress, duration, audioRef, progressBarRef]);
+
+  // Playing or pausing track and animating progress bar
   useEffect(() => {
     if (isPlaying) {
       audioRef.current?.play();
+      startAnimation();
     } else {
       audioRef.current?.pause();
+      if (playAnimationRef.current !== null) {
+        cancelAnimationFrame(playAnimationRef.current);
+        playAnimationRef.current = null;
+      }
+      updateProgress();
     }
-  }, [isPlaying, audioRef]);
+    return () => {
+      if (playAnimationRef.current !== null) {
+        cancelAnimationFrame(playAnimationRef.current);
+      }
+    };
+  }, [isPlaying, startAnimation, updateProgress, audioRef]);
+
+  const onLoadedMetadata = () => {
+    const seconds = audioRef.current?.duration;
+
+    if (seconds !== undefined) {
+      setDuration(seconds);
+      if (progressBarRef.current) {
+        progressBarRef.current.max = seconds.toString();
+      }
+    }
+  };
 
   return (
     <div className="flex gap-4 items-center">
-      <audio src={currentTrack.src} ref={audioRef} />
+      <audio
+        src={currentTrack.src}
+        ref={audioRef}
+        onLoadedMetadata={onLoadedMetadata}
+      />
       <button onClick={() => {}}>
         <BsSkipStartFill size={20} />
       </button>
