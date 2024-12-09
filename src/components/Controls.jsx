@@ -10,6 +10,7 @@ import {
   BsRepeat,
 } from 'react-icons/bs';
 import { useAudioPlayerContext } from '../context/AudioPlayerContext';
+import { tracks } from '../data/tracks';
 
 const Controls = () => {
   const {
@@ -19,11 +20,73 @@ const Controls = () => {
     duration,
     setDuration,
     setTimeProgress,
+    setTrackIndex,
+    setCurrentTrack,
   } = useAudioPlayerContext();
   const [isShuffle, setIsShuffle] = useState(false);
   const [isRepeat, setIsRepeat] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const playAnimationRef = useRef(null);
+
+  const skipForward = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime += 15;
+      updateProgress();
+    }
+  };
+
+  const skipBackward = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime -= 15;
+      updateProgress();
+    }
+  };
+
+  // Caching the functions to improve performance
+  const handlePrevious = useCallback(() => {
+    setTrackIndex((prev) => {
+      const newIndex = isShuffle
+        ? Math.floor(Math.random() * tracks.length)
+        : prev === 0
+        ? tracks.length - 1
+        : prev - 1;
+
+      setCurrentTrack(tracks[newIndex]);
+      return newIndex;
+    });
+  }, [isShuffle, setTrackIndex, setCurrentTrack]);
+
+  const handleNext = useCallback(() => {
+    setTrackIndex((prev) => {
+      const newIndex = isShuffle
+        ? Math.floor(Math.random() * tracks.length)
+        : prev >= tracks.length - 1
+        ? 0
+        : prev + 1;
+
+      setCurrentTrack(tracks[newIndex]);
+      return newIndex;
+    });
+  }, [isShuffle, setCurrentTrack, setTrackIndex]);
+
+  // Handling onEnded event
+  useEffect(() => {
+    const currentAudioRef = audioRef.current;
+    if (currentAudioRef) {
+      currentAudioRef.onended = () => {
+        if (isRepeat) {
+          currentAudioRef.play();
+        } else {
+          handleNext();
+        }
+      };
+    }
+    return () => {
+      if (currentAudioRef) {
+        currentAudioRef.onended = null;
+      }
+    };
+  }, [isRepeat, handleNext, audioRef]);
 
   // Update progress of the audio playback and progress bar
   const updateProgress = useCallback(() => {
@@ -62,6 +125,7 @@ const Controls = () => {
       }
       updateProgress();
     }
+
     return () => {
       if (playAnimationRef.current !== null) {
         cancelAnimationFrame(playAnimationRef.current);
@@ -87,10 +151,10 @@ const Controls = () => {
         ref={audioRef}
         onLoadedMetadata={onLoadedMetadata}
       />
-      <button onClick={() => {}}>
+      <button onClick={handlePrevious}>
         <BsSkipStartFill size={20} />
       </button>
-      <button onClick={() => {}}>
+      <button onClick={skipBackward}>
         <BsFillRewindFill size={20} />
       </button>
       <button onClick={() => setIsPlaying((prev) => !prev)}>
@@ -100,10 +164,10 @@ const Controls = () => {
           <BsFillPlayFill size={30} />
         )}
       </button>
-      <button onClick={() => {}}>
+      <button onClick={skipForward}>
         <BsFillFastForwardFill size={20} />
       </button>
-      <button onClick={() => {}}>
+      <button onClick={handleNext}>
         <BsSkipEndFill size={20} />
       </button>
       <button onClick={() => setIsShuffle((prev) => !prev)}>

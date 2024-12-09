@@ -4,7 +4,8 @@ import { AudioPlayerContext } from './AudioPlayerContext';
 import { tracks } from '../data/tracks';
 
 const AudioPlayerProvider = ({ children }) => {
-  const [currentTrack, setCurrentTrack] = useState(tracks[0]);
+  const [trackIndex, setTrackIndex] = useState(0);
+  const [currentTrack, setCurrentTrack] = useState(tracks[trackIndex]);
   const audioRef = useRef(null);
   const progressBarRef = useRef(null);
   const [timeProgress, setTimeProgress] = useState(0);
@@ -18,6 +19,7 @@ const AudioPlayerProvider = ({ children }) => {
     setTimeProgress,
     duration,
     setDuration,
+    setTrackIndex,
   };
 
   return (
