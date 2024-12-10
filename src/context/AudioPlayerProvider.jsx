@@ -10,6 +10,7 @@ const AudioPlayerProvider = ({ children }) => {
   const progressBarRef = useRef(null);
   const [timeProgress, setTimeProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const contextValue = {
     currentTrack,
     setCurrentTrack,
@@ -18,8 +19,10 @@ const AudioPlayerProvider = ({ children }) => {
     timeProgress,
     setTimeProgress,
     duration,
+    isPlaying,
     setDuration,
     setTrackIndex,
+    setIsPlaying,
   };
 
   return (
